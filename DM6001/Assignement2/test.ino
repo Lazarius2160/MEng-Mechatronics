@@ -20,8 +20,8 @@ const int stepsPerRevolution = 200;
 float xpos, ypos; // actual position
 int xsteps, ysteps; // steps to do to reach wanted position
 int xprevious = 0, yprevious = 0; //previous position 
-int speed, init_speed =30;
-int feedRate;
+int speed, init_speed =30; // in rpm
+int feedRate; // mm per minute,speed at which the pen will write in line mode
 float ival, jval; // arc centres
 
 //--------------------CREATION OF STEPPERS------------------------
@@ -114,7 +114,6 @@ void rapidmove(float x, float y, int maxSpeed)
   Y_Axis.setSpeed(maxSpeed);
 
   
-  
   if (xsteps==0 && ysteps != 0){
     while (xcount!=xsteps){
       if (ysteps>=0){
@@ -129,11 +128,7 @@ void rapidmove(float x, float y, int maxSpeed)
             ycount--; 
           }
         }
-   /* Serial.print(xcount+xprevious);
-  //  Serial.print(','); // enables us to separate xposition and ypositions using csv format and ',' character
-    Serial.write(9);  // OR!!!!!!!!!! USE ascii 9 is tab character (see instructions "ascii coma separated set of values")
-    Serial.println(ycount+yprevious);//print ln will go on the next line
-     */ }
+    }
   } 
       
   if (ysteps==0 & xsteps != 0){
@@ -150,17 +145,12 @@ void rapidmove(float x, float y, int maxSpeed)
             X_Axis.step(-1);
             xcount--;
           }
-        }   
-   /* Serial.print(xcount+xprevious);
-   // Serial.print(','); // enables us to separate xposition and ypositions using csv format and ',' character
-    Serial.write(9);  // OR!!!!!!!!!! USE ascii 9 is tab character (see instructions "ascii coma separated set of values")
-    Serial.println(ycount+yprevious);//print ln will go on the next line
-     */ 
+        }    
     }
   }
 
   if (xsteps !=0 && ysteps!=0){
-  while (xcount != xsteps && ycount != ysteps)  // theses cases are due to incremental way of moving
+  while (xcount != xsteps || ycount != ysteps)  // theses cases are due to incremental way of moving
   {
     if (xsteps>=0){   //we increase xcount until it is equal to xsteps, then x destination is reached
       if (xcount < xsteps){
@@ -187,11 +177,7 @@ void rapidmove(float x, float y, int maxSpeed)
         ycount--; 
       }
     }
-   /* Serial.print(xcount+xprevious);
-  //  Serial.print(','); // enables us to separate xposition and ypositions using csv format and ',' character
-    Serial.write(9);  // OR!!!!!!!!!! USE ascii 9 is tab character (see instructions "ascii coma separated set of values")
-    Serial.println(ycount+yprevious);//print ln will go on the next line
-  */}
+    }
   }
   // Set speed to initial value 
   X_Axis.setSpeed(init_speed);
@@ -200,9 +186,8 @@ void rapidmove(float x, float y, int maxSpeed)
   //Set the new actual position 
   xprevious+=xcount;
   yprevious+=ycount;
-  Serial.println("Actual position");
-  Serial.println(xprevious);
-  Serial.println(yprevious);
+  Serial.print(xcount+xprevious);
+  Serial.println(ycount+yprevious);
   }
 
 void linemove(float x, float y, int feedRate)
@@ -213,7 +198,6 @@ void linemove(float x, float y, int feedRate)
   int xcount=0, ycount=0;
 
   if (xsteps==0 && ysteps != 0){
-    Serial.println("Case one");
     while (xcount!=xsteps){
       if (ysteps>=0){
         if (ycount < ysteps){
@@ -228,9 +212,9 @@ void linemove(float x, float y, int feedRate)
           }
         }
     Serial.print(xcount+xprevious);
-    Serial.print(','); // enables us to separate xposition and ypositions using csv format and ',' character
-    Serial.write(9);  // OR!!!!!!!!!! USE ascii 9 is tab character (see instructions "ascii coma separated set of values")
-    Serial.println(ycount+yprevious);//print ln will go on the next line
+    Serial.print(','); // These two lines...
+    Serial.write(9);  // ...enables us to separate xposition and ypositions using csv format with ',' character and tab as a separator
+    Serial.println(ycount+yprevious);
      }
   } 
       
@@ -249,10 +233,9 @@ void linemove(float x, float y, int feedRate)
           }
         }   
     Serial.print(xcount+xprevious);
-    Serial.print(','); // enables us to separate xposition and ypositions using csv format and ',' character
-    Serial.write(9);  // OR!!!!!!!!!! USE ascii 9 is tab character (see instructions "ascii coma separated set of values")
-    Serial.println(ycount+yprevious);//print ln will go on the next line
-    
+    Serial.print(','); 
+    Serial.write(9);  
+    Serial.println(ycount+yprevious);
     }
   }
 
@@ -285,10 +268,10 @@ void linemove(float x, float y, int feedRate)
       }
     }
     Serial.print(xcount+xprevious);
-    Serial.print(','); // enables us to separate xposition and ypositions using csv format and ',' character
-    Serial.write(9);  // OR!!!!!!!!!! USE ascii 9 is tab character (see instructions "ascii coma separated set of values")
-    Serial.println(ycount+yprevious);//print ln will go on the next line
- }
+    Serial.print(','); 
+    Serial.write(9);  
+    Serial.println(ycount+yprevious);
+}
   }
   //Set the new actual position 
   xprevious+=xcount;
@@ -315,7 +298,7 @@ void arcmove_CCLW(float x, float y, float i, float j)
   Serial.println(included_angle);
    
   if (included_angle<0){
-    for (float inc = 0; inc < abs(included_angle); inc += 0.1) {
+    for (float inc = 0; inc < abs(included_angle); inc += RESOLUTION) {
     ypos = radius * sin(inc);
     xpos = -(radius-(radius * cos(inc))); // radius-radius*cos(inc
     linemove(xpos,ypos, init_speed); // use initial speed4
@@ -323,13 +306,12 @@ void arcmove_CCLW(float x, float y, float i, float j)
   }
   
   else { 
-  for (float inc = 0; inc < included_angle; inc += 0.1) {
+  for (float inc = 0; inc < included_angle; inc +=RESOLUTION) {
     xpos = radius * sin(inc);
     ypos = radius-(radius * cos(inc)); // radius-radius*cos(inc)
     linemove(xpos,ypos, init_speed); // use initial speed4
   }
   }
-  Serial.println("end");
 }
   
 
@@ -354,7 +336,7 @@ void arcmove_CLW(float x, float y, float i, float j)
 
   if (included_angle>=3.14){  //had to put >= because == wouldn't work
     Serial.println("angle =3.14");
-  for (float inc = 0; inc < included_angle; inc += 0.1) {
+  for (float inc = 0; inc < included_angle; inc += RESOLUTION) {
     xpos = -(radius * sin(inc));
     ypos = j-(radius * cos(inc)); // radius-radius*cos(inc)
     linemove(xpos,ypos, init_speed); // use initial speed
@@ -362,7 +344,7 @@ void arcmove_CLW(float x, float y, float i, float j)
   }
   else {
         Serial.println("angle !=3.14");
-  for (float inc = 0; inc > included_angle; inc -= 0.1) {
+  for (float inc = 0; inc > included_angle; inc -= RESOLUTION) {
     xpos = radius * sin(inc);
     ypos = j-(radius * cos(inc)); // radius-radius*cos(inc)
     linemove(xpos,ypos, init_speed); // use initial speed
