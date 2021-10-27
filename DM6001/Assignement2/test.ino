@@ -1,106 +1,122 @@
-//conversion factor 200 steps per rev
-// = 200 steps per 2mm
-// 100 steps per mm
-// multiply mm by 100 to get steps
-// then converto from float to int.
-//--------------------MOVES TO DO ONE BY ONE IN THE SERIAL MONITOR-
+// Author: Marine CAMBA 
+// DM6001 Seamus GORDON
+// MEng Mechatronics 2021-2022
+// Assignement 2
+//------------------------------------------------------------------------------------
+
+
+//--------------------MOVES---------------------------------------
 /*
-G00 X10.0 Y0.0 S50 
-G01 X30.0 Y0.0 F100
-G03 X10.0 Y10.0 I0.0 J10.0
+TO DO LINE BY LINE
+IF USING THE SERIAL MONITOR ON ARDUINO IDE, NEED TO DO AN ENTER AT THE END OF EACH LINE
+IF USING THE ARDUINO SIMULATOR, PUT AN '#' AT THE END OF EVERY LINE AND UNCOMMENT CASE '#' LINE 101
+MOVE DEPENDS ON THE PREVIOUS POSITION
+
+G00 X10.0 Y0.0 S50            // Increase the speed of the rapid move
+G01 X30.0 Y0.0 F100          
+G03 X10.0 Y10.0 I0.0 J10.0    // First arc counterclokwise
 G01 X0.0 Y34.0.0 F100
-G03 X-6.0 Y6.0 I-6.0 J0.0
+G03 X-6.0 Y6.0 I-6.0 J0.0     // Second arc, also counterclockwise
 G01 X-39.0 Y0.0 F100
 G01 X-5.0 Y-5.0 F100
 G01 X0.0 Y-35.0 F100
 G01 X10.0 Y-10.0 F100
-// G00 X-10.0 // fait pas lui car doit faire le rond pour faire le rond au centre:
-G00 X15.0 Y39.5 S50 // pour etre en bas du cercle
-G03 X0.0 Y5.0 I0.0 J2.5
-G00 X0.0 Y-5.0 S50 //return to bottom of the circle
-G02 X0.0 Y5.0 I0.0 J2.5
-G00 X-25.0 Y-44.5 S50
+G00 X15.0 Y39.5 S50           // Placing the target at the bottom of the central circle
+G03 X0.0 Y5.0 I0.0 J2.5       // Do the first demi-circle using counterclockwise motion
+G00 X0.0 Y-5.0 S50            // Return to bottom of the circle
+G02 X0.0 Y5.0 I0.0 J2.5       // Do the second demi-circle using clockwise motion
+G00 X-25.0 Y-44.5 S50         // Go back to (0,0) position
  */
+ 
 //--------------------PRE PROCESSOR INSTRUCTIONS-------------------
-#include<Stepper.h>
-#include<math.h>
+#include<Stepper.h>   // This librairy will control the steppers
+#include<math.h>      // Here to calculate arcs
 
-#define RESOLUTION 0.01
+#define RESOLUTION 0.01   // Needed to know how much we can approximate the arcs, took 0.01 to increase speed of the code
+
+// Name of the different modes to be used
+#define RAPID 0
 #define LINE 1
 #define ARC_CLW 2
 #define ARC_CCLW 3
-#define RAPID 0
 
 //--------------------GLOBAL VARIABLES-----------------------------
-int movemode;
-const int stepsPerRevolution = 200;
-float xpos, ypos; // actual position
-int xsteps, ysteps; // steps to do to reach wanted position
-int xprevious = 0, yprevious = 0; //previous position 
-int speed, init_speed =30; // in rpm
-int feedRate; // mm per minute,speed at which the pen will write in line mode
-float ival, jval; // arc centres
+int movemode;   // What mode is going to be used for a movement
+const int stepsPerRevolution = 200;   
+float xpos, ypos; // Actual positions
+int xprevious = 0, yprevious = 0; // Previous positions, to help calculate relative displacement  
+int xsteps, ysteps; // Steps to make to reach the wanted position
+int speed, init_speed =30; // Speed of the stepper motors, in rpm
+int feedRate; // Speed at which the pen will write in line mode, in mm per minute
+float ival, jval; // Position of arc centres
 
 //--------------------CREATION OF STEPPERS------------------------
-Stepper X_Axis(stepsPerRevolution, 2, 3, 5, 6); //Create an instance of Stepper for axis X
-Stepper Y_Axis(stepsPerRevolution, 7, 8, 9, 10); //Create an instance of Stepper for axis Y
+Stepper X_Axis(stepsPerRevolution, 2, 3, 5, 6); // Create an instance of Stepper for axis X, connected to pin 2,3,5 and 6 to the Arduino
+Stepper Y_Axis(stepsPerRevolution, 7, 8, 9, 10); // Create an instance of Stepper for axis Y
 
 //--------------------SETUP---------------------------------------
 void setup() {
   Serial.begin(9600);
   X_Axis.setSpeed(init_speed);
   Y_Axis.setSpeed(init_speed);
-  Serial.println("Enter G-code displacement and speed "); // Tell user to input values from keyboard 
+  Serial.println("Enter G-code coordinates: "); // Tell user to input values from keyboard, don't forget to do it line by line 
 }
 
 //--------------------MAIN LOOP------------------------------------
 void loop() {
-  if (Serial.available()) {  // something has been typed
-    char ch = Serial.read();  // read the input character
-    // ALWAYS WRITE IN FLOAT NOT IN INT BECAUSE IT WILL DO PARSEFLOAT SO THE NUMBER WILL CHANGE (10 instead of 10.0 will give 88.0)
+  if (Serial.available()) {  // Wait for something to be typed
+    // Beware! Always write in float format (10.0 instead of 10) as we use parsefloat and that putting an 'int' may cause trouble
+    char ch = Serial.read();  // Read the input character
+    
     switch (ch) {
 
-      case'G': movemode = Serial.parseInt();
+      case'G': movemode = Serial.parseInt(); // After the G and before the next not int character, store the number found and use it for the chosemode function
         Serial.print("Move mode:");
         Serial.println(movemode);
         break;
 
       case 'X':
-      case 'x': xpos = Serial.parseFloat();  // if it is X then expect a float to follow
+      case 'x': xpos = Serial.parseFloat();  // If it is X then expect a float to follow
         Serial.print("X move:");
         Serial.println(xpos);
-        break; // Values are stored.. Do nothing more for now.
+        break; // Values are stored
 
       case 'Y':
-      case 'y': ypos = Serial.parseFloat();  // if it is X then expect a float to follow
+      case 'y': ypos = Serial.parseFloat();  // If it is X then expect a float to follow
         Serial.print("Y move:");
         Serial.println(ypos);
-        break; // Values are stored.. Do nothing more for now.
+        break; // Values are stored
 
-      case 'S': //speed in g code is written as S
-      case 's': speed = Serial.parseInt();   // get value for speed and store. Value is for the next move so do nothing else right now.
+      case 'S': // Speed at which the stepper in rapid mode should go, in rpm
+      case 's': 
+        speed = Serial.parseInt();   // Get value for speed and store, used only in rapidmove mode to define a max speed
+        Serial.print("Speed:");
+        Serial.println(speed); 
         break;
 
       case 'F': 
-      case 'f': feedRate = Serial.parseInt();   // get value for speed and store. Value is for the next move so do nothing else right now.
+      case 'f': 
+        feedRate = Serial.parseInt();   // Get value for feedrate, used only in linemove mode to define speed in mm/minute
+        Serial.print("Feedrate:");
+        Serial.println(feedRate);
         break;
         
       case 'I':
-      case 'i': ival = Serial.parseFloat();  // if it is X then expect a float to follow
-        break; // Values are stored.. Do nothing more for now. case 'X':
+      case 'i': ival = Serial.parseFloat();  // If it is X then expect a float to follow
+        break; // Values are stored
 
       case 'J': 
-      case 'j': jval    = Serial.parseFloat();  // if it is X then expect a float to follow
-        break; // Values are stored.. Do nothing more for now.
+      case 'j': jval    = Serial.parseFloat();  // If it is X then expect a float to follow
+        break; // Values are stored
 
-      //case  '#':  //if use # in arduino IDE does each movement twice
-      case '\n':   // return key has been hit. Output a move if the X value has changed since the last CR. 
-        chosemode(movemode);
+      //case  '#':    // If use '#' in arduino IDE does each movement twice
+      case '\n':   // Return key has been hit. 
+        chosemode(movemode);    // Select the move to do depending on the G input
         break;
 
       default:
       if (ch != ' '){
-        Serial.print("Not recognised:"); // A non-valid input so ignore.
+        Serial.print("Not recognised:"); // A non-valid input so ignore
         Serial.print(ch);
       }
         break;
@@ -110,7 +126,7 @@ void loop() {
 
 //--------------------DIFFERENT WAYS OF MOVING - functions-------------------
 void chosemode (int mode){
-   if (mode ==RAPID) {
+   if (mode == RAPID) {
     rapidmove(xpos, ypos, speed);
    }
    if (mode == LINE){
@@ -130,22 +146,23 @@ void rapidmove(float x, float y, int maxSpeed)
   int xsteps = x* 100;
   int ysteps = y* 100;
   int xcount=0, ycount=0;
+  
   // Set speed to value given
   X_Axis.setSpeed(maxSpeed);
   Y_Axis.setSpeed(maxSpeed);
-  Serial.println("dans la boucle");
-  
-  if (xsteps==0 && ysteps != 0){
-    while (ycount!=ysteps){
-      if (ysteps>=0){
-        if (ycount < ysteps){
-          //Y_Axis.step(1);
+
+  // 3 cases to work on : horizontal, vertical and diagonal
+  if (xsteps==0 && ysteps != 0){    // Horizontal movement with X0.0
+    while (ycount!=ysteps){         // We increase/decrease ycount until it is equal to ysteps, then y destination is reached
+      if (ysteps>=0){               // If Y increases so Yx.x > 0
+        if (ycount < ysteps){       // '<' so that is doesn't do an overstep
+          Y_Axis.step(1);           // Y stepper increases by one
           ycount++;
         }
       }
-        else{
-          if (ycount > ysteps){
-            //Y_Axis.step(-1);
+        else{                       // If Y decreases so Yx.x < 0
+          if (ycount > ysteps){     // '>' so that is doesn't do an overstep
+            Y_Axis.step(-1);        // Y stepper decreases by one
             ycount--; 
           }
         }
@@ -155,11 +172,11 @@ void rapidmove(float x, float y, int maxSpeed)
     }
   } 
       
-  if (ysteps==0 & xsteps != 0){
-      while (xcount!=xsteps){
-        if (xsteps>=0){   //we increase xcount until it is equal to xsteps, then x destination is reached
+  if (ysteps==0 & xsteps != 0){     // Vertical movement with Y0.0 
+      while (xcount!=xsteps){       // Same methodology as before
+        if (xsteps>=0){            
           if (xcount < xsteps){
-            X_Axis.step(1);
+            X_Axis.step(1);   
             xcount++;
             
           }
@@ -170,16 +187,16 @@ void rapidmove(float x, float y, int maxSpeed)
             xcount--;
           }
         }    
-        Serial.print(xcount+xprevious);
-    Serial.write(9);  
-    Serial.println(ycount+yprevious);
-    }
+      Serial.print(xcount+xprevious);
+      Serial.write(9);  
+      Serial.println(ycount+yprevious);
+      }
   }
 
-  if (xsteps !=0 && ysteps!=0){
-  while (xcount != xsteps || ycount != ysteps)  // theses cases are due to incremental way of moving
+  if (xsteps !=0 && ysteps!=0){   // Diagonal movement 
+  while (xcount != xsteps || ycount != ysteps)  // Needs to reach X AND Y given positions
   {
-    if (xsteps>=0){   //we increase xcount until it is equal to xsteps, then x destination is reached
+    if (xsteps>=0){   // We increase/decrease xcount until it is equal to xsteps, then x destination is reached
       if (xcount < xsteps){
         X_Axis.step(1);
         xcount++;
@@ -192,15 +209,15 @@ void rapidmove(float x, float y, int maxSpeed)
       }
     }
 
-    if (ysteps>=0){
+    if (ysteps>=0){   // Same for y
       if (ycount < ysteps){
-        //Y_Axis.step(1);
+        Y_Axis.step(1);
         ycount++;
       }
     }
     else{
       if (ycount > ysteps){
-        //Y_Axis.step(-1);
+        Y_Axis.step(-1);
         ycount--; 
       }
     }
