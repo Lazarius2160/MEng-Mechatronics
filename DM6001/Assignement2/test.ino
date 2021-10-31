@@ -346,14 +346,16 @@ void arcmove_CCLW(float x, float y, float i, float j)
   Serial.println(included_angle);
    
   if (included_angle<0){
-    for (float inc = 0; inc < abs(included_angle); inc += RESOLUTION) {
-    ypos = radius * sin(inc);
-    xpos = -(radius-(radius * cos(inc))); // radius-radius*cos(inc
-    Serial.print(xpos+xprevious);
+    for (float inc = 0; inc < abs(included_angle); inc += RESOLUTION) { 
+    // We divide the angle we need in smaller angles to calculate small lines to create the arc (approximation), for each iteration, the angle is going to increase by RESOLUTION in degree
+    ypos = radius * sin(inc); // This is the y cordinate of the line we'll have to trace
+    xpos = -(radius-(radius * cos(inc))); // This is it's x coordinate
+    // This prints the positions of x and y in relative coordinates (regarding the previous position given by G-Code), this is for testing purpose and readability
+    // we then need to draw the line between the two points using linemove
+    /*Serial.print(xpos+xprevious);   
     Serial.write(9);  
-    Serial.println(ypos+yprevious);
-    // NEED TO EXPLAIN WHY DO NOT USE LINE MOVE AND WHAT MOVE DOES THE STEPPER HAS TO DO !!!!!!!!!!!!!!!!!
-    //linemove(xpos,ypos, init_speed); // use initial speed4
+    Serial.println(ypos+yprevious);*/
+    linemove(xpos,ypos, init_speed); // We call line move to trace the line in between the x and y coordinate we found, this will trace the small lines to link each x and y
   }
   }
   
@@ -361,10 +363,14 @@ void arcmove_CCLW(float x, float y, float i, float j)
   for (float inc = 0; inc < included_angle; inc +=RESOLUTION) {
     xpos = radius * sin(inc);
     ypos = radius-(radius * cos(inc)); // radius-radius*cos(inc)
-    Serial.print(xpos+xprevious); 
+    /*Serial.print(xpos+xprevious); 
     Serial.write(9);  
-    Serial.println(ypos+yprevious);
-    //linemove(xpos,ypos, init_speed); // use initial speed4
+    Serial.println(ypos+yprevious);*/
+    Serial.print("New iteration with: x=");
+    Serial.print(xpos);
+    Serial.print(" and y=");
+                 Serial.println(ypos);
+    linemove(xpos,ypos, init_speed); // use initial speed4
   }
   }
 }
@@ -394,10 +400,10 @@ void arcmove_CLW(float x, float y, float i, float j)
   for (float inc = 0; inc < included_angle; inc += RESOLUTION) {
     xpos = -(radius * sin(inc));
     ypos = j-(radius * cos(inc)); // radius-radius*cos(inc)
-        Serial.print(xpos+xprevious);
+   /* Serial.print(xpos+xprevious);
     Serial.write(9);  
-    Serial.println(ypos+yprevious);
-    //linemove(xpos,ypos, init_speed); // use initial speed
+    Serial.println(ypos+yprevious);*/
+    linemove(xpos+xprevious,ypos+yprevious, init_speed); // use initial speed
   }   
   }
   else {
@@ -405,10 +411,10 @@ void arcmove_CLW(float x, float y, float i, float j)
   for (float inc = 0; inc > included_angle; inc -= RESOLUTION) {
     xpos = radius * sin(inc);
     ypos = j-(radius * cos(inc)); // radius-radius*cos(inc)
-    Serial.print(xpos+xprevious);
+    /*Serial.print(xpos+xprevious);
     Serial.write(9);  
-    Serial.println(ypos+yprevious);
-    //linemove(xpos,ypos, init_speed); // use initial speed
+    Serial.println(ypos+yprevious);*/
+    linemove(xpos+xprevious,ypos+yprevious, init_speed); // use initial speed
   }  
   }
 }
