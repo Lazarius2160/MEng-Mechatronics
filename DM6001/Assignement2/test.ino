@@ -356,7 +356,8 @@ void arcmove_CCLW(float x, float y, float i, float j)
     Serial.write(9);  
     Serial.println(ypos+yprevious);*/
     linemove(xpos,ypos, init_speed); // We call line move to trace the line in between the x and y coordinate we found, this will trace the small lines to link each x and y
-  }
+  //!!!!!!!!!!!!!!!!!!!!!! PBM WHEN USING LINEMOVE : il s'arrete a 9951 et 5671 quand lui demande d'aller en 1,1 (mais le calcul de x et y est correct juste pas celui de linemove, peut etre du au fait qu'il skip des step donc faire +0.1?
+    }
   }
   
   else { 
