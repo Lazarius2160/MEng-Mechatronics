@@ -12,20 +12,20 @@ IF USING THE SERIAL MONITOR ON ARDUINO IDE, NEED TO DO AN ENTER AT THE END OF EA
 IF USING THE ARDUINO SIMULATOR, PUT AN '#' AT THE END OF EVERY LINE AND UNCOMMENT CASE '#' LINE 101
 MOVE DEPENDS ON THE PREVIOUS POSITION
 
-G00 X10.0 Y0.0 S50            // Increase the speed of the rapid move
-G01 X30.0 Y0.0 F100          
-G03 X10.0 Y10.0 I0.0 J10.0    // First arc counterclokwise
-G01 X0.0 Y34.0.0 F100
-G03 X-6.0 Y6.0 I-6.0 J0.0     // Second arc, also counterclockwise
-G01 X-39.0 Y0.0 F100
-G01 X-5.0 Y-5.0 F100
-G01 X0.0 Y-35.0 F100
-G01 X10.0 Y-10.0 F100
-G00 X15.0 Y39.5 S50           // Placing the target at the bottom of the central circle
-G03 X0.0 Y5.0 I0.0 J2.5       // Do the first demi-circle using counterclockwise motion
-G00 X0.0 Y-5.0 S50            // Return to bottom of the circle
-G02 X0.0 Y5.0 I0.0 J2.5       // Do the second demi-circle using clockwise motion
-G00 X-25.0 Y-44.5 S50         // Go back to (0,0) position
+G00 X10.0 Y0.0 S50 #          // Increase the speed of the rapid move
+G01 X30.0 Y0.0 F100 #         
+G03 X10.0 Y10.0 I0.0 J10.0 #  // First arc counterclokwise
+G01 X0.0 Y34.0.0 F100 #
+G03 X-6.0 Y6.0 I-6.0 J0.0 #   // Second arc, also counterclockwise
+G01 X-39.0 Y0.0 F100 #
+G01 X-5.0 Y-5.0 F100 #
+G01 X0.0 Y-35.0 F100 #
+G01 X10.0 Y-10.0 F100 #
+G00 X15.0 Y39.5 S50 #         // Placing the target at the bottom of the central circle
+G03 X0.0 Y5.0 I0.0 J2.5 #     // Do the first demi-circle using counterclockwise motion
+G00 X0.0 Y-5.0 S50 #          // Return to bottom of the circle
+G02 X0.0 Y5.0 I0.0 J2.5 #     // Do the second demi-circle using clockwise motion
+G00 X-25.0 Y-44.5 S50 #       // Go back to (0,0) position
  */
  
 //--------------------PRE PROCESSOR INSTRUCTIONS-------------------
@@ -109,7 +109,7 @@ void loop() {
       case 'j': jval    = Serial.parseFloat();  // If it is X then expect a float to follow
         break; // Values are stored
 
-      //case  '#':    // If use '#' in arduino IDE does each movement twice
+      case  '#':    // If use '#' in arduino IDE does each movement twice
       case '\n':   // Return key has been hit. 
         chosemode(movemode);    // Select the move to do depending on the G input
         break;
@@ -142,7 +142,6 @@ void chosemode (int mode){
 
 void rapidmove(float x, float y, int maxSpeed)
 {
-  //!!!!!!!!!! pas sure que doivent garder en mémoire les steps ici mais juste faire le mouvement du step (a voir sur tracé excel le rendu)
   int xsteps = x* 100;
   int ysteps = y* 100;
   int xcount=0, ycount=0;
@@ -166,9 +165,10 @@ void rapidmove(float x, float y, int maxSpeed)
             ycount--; 
           }
         }
-    Serial.print(xcount+xprevious);
+    // Just for testing purpose, these steps are not supposed to be used in the drawing as we are in rapid mode and not line mode
+    /*Serial.print(xcount+xprevious);
     Serial.write(9);  
-    Serial.println(ycount+yprevious);
+    Serial.println(ycount+yprevious);*/
     }
   } 
       
@@ -187,9 +187,10 @@ void rapidmove(float x, float y, int maxSpeed)
             xcount--;
           }
         }    
-      Serial.print(xcount+xprevious);
+      // Same as previous
+      /*Serial.print(xcount+xprevious);
       Serial.write(9);  
-      Serial.println(ycount+yprevious);
+      Serial.println(ycount+yprevious);*/
       }
   }
 
@@ -221,9 +222,10 @@ void rapidmove(float x, float y, int maxSpeed)
         ycount--; 
       }
     }
-    Serial.print(xcount+xprevious); 
+    // Same as previous
+    /*Serial.print(xcount+xprevious); 
     Serial.write(9);  
-    Serial.println(ycount+yprevious);
+    Serial.println(ycount+yprevious);*/
     }
   }
   // Set speed to initial value 
@@ -233,7 +235,9 @@ void rapidmove(float x, float y, int maxSpeed)
   //Set the new actual position 
   xprevious+=xcount;
   yprevious+=ycount;
-  Serial.println(xprevious);
+  Serial.print("Actual position : X = ");
+  Serial.print(xprevious);
+  Serial.print("; Y = ");
   Serial.println(yprevious);
   }
 
@@ -248,19 +252,19 @@ void linemove(float x, float y, int feedRate)
     while (ycount!=ysteps){
       if (ysteps>=0){
         if (ycount < ysteps){
-          //Y_Axis.step(1);
+          Y_Axis.step(1);
           ycount++;
         }
       }
         else{
           if (ycount > ysteps){
-            //Y_Axis.step(-1);
+            Y_Axis.step(-1);
             ycount--; 
           }
         }
-    /*Serial.print(xcount+xprevious);
+    Serial.print(xcount+xprevious);
     Serial.write(9);  // ...enables us to separate xposition and ypositions using csv format with ',' character and tab as a separator
-    Serial.println(ycount+yprevious);*/
+    Serial.println(ycount+yprevious);
      }
   } 
       
@@ -278,9 +282,9 @@ void linemove(float x, float y, int feedRate)
             xcount--;
           }
         }   
-    /*Serial.print(xcount+xprevious);
+    Serial.print(xcount+xprevious);
     Serial.write(9);  
-    Serial.println(ycount+yprevious);*/
+    Serial.println(ycount+yprevious);
     }
   }
 
@@ -312,9 +316,9 @@ void linemove(float x, float y, int feedRate)
         ycount--; 
       }
     }
-  /* Serial.print(xcount+xprevious);
+   Serial.print(xcount+xprevious);
    Serial.write(9);  
-    Serial.println(ycount+yprevious);*/
+   Serial.println(ycount+yprevious);
 }
   }
   //Set the new actual position 
@@ -345,10 +349,11 @@ void arcmove_CCLW(float x, float y, float i, float j)
     for (float inc = 0; inc < abs(included_angle); inc += RESOLUTION) {
     ypos = radius * sin(inc);
     xpos = -(radius-(radius * cos(inc))); // radius-radius*cos(inc
-    Serial.print(xpos);
+    Serial.print(xpos+xprevious);
     Serial.write(9);  
-    Serial.println(ypos);
-    linemove(xpos,ypos, init_speed); // use initial speed4
+    Serial.println(ypos+yprevious);
+    // NEED TO EXPLAIN WHY DO NOT USE LINE MOVE AND WHAT MOVE DOES THE STEPPER HAS TO DO !!!!!!!!!!!!!!!!!
+    //linemove(xpos,ypos, init_speed); // use initial speed4
   }
   }
   
@@ -356,10 +361,10 @@ void arcmove_CCLW(float x, float y, float i, float j)
   for (float inc = 0; inc < included_angle; inc +=RESOLUTION) {
     xpos = radius * sin(inc);
     ypos = radius-(radius * cos(inc)); // radius-radius*cos(inc)
-    Serial.print(xpos); 
+    Serial.print(xpos+xprevious); 
     Serial.write(9);  
-    Serial.println(ypos);
-    linemove(xpos,ypos, init_speed); // use initial speed4
+    Serial.println(ypos+yprevious);
+    //linemove(xpos,ypos, init_speed); // use initial speed4
   }
   }
 }
@@ -389,10 +394,10 @@ void arcmove_CLW(float x, float y, float i, float j)
   for (float inc = 0; inc < included_angle; inc += RESOLUTION) {
     xpos = -(radius * sin(inc));
     ypos = j-(radius * cos(inc)); // radius-radius*cos(inc)
-        Serial.print(xpos);
+        Serial.print(xpos+xprevious);
     Serial.write(9);  
-    Serial.println(ypos);
-    linemove(xpos,ypos, init_speed); // use initial speed
+    Serial.println(ypos+yprevious);
+    //linemove(xpos,ypos, init_speed); // use initial speed
   }   
   }
   else {
@@ -400,10 +405,10 @@ void arcmove_CLW(float x, float y, float i, float j)
   for (float inc = 0; inc > included_angle; inc -= RESOLUTION) {
     xpos = radius * sin(inc);
     ypos = j-(radius * cos(inc)); // radius-radius*cos(inc)
-        Serial.print(xpos);
+    Serial.print(xpos+xprevious);
     Serial.write(9);  
-    Serial.println(ypos);
-    linemove(xpos,ypos, init_speed); // use initial speed
+    Serial.println(ypos+yprevious);
+    //linemove(xpos,ypos, init_speed); // use initial speed
   }  
   }
 }
