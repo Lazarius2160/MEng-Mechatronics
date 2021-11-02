@@ -400,16 +400,14 @@ void arcmove_CCLW(float x, float y, float i, float j)
 
 void arcmove_CLW(float x, float y, float i, float j)
 {
+  // To do clock wise arc I simply use arcmove-CCLW and mirrored it as the main difference was how X was moving (decrease instead of increasing)
   float deltax, deltay;
   float xpos, ypos;
   float radius;
 
-  deltax = abs(x - i); // general case if x does not corresponds to i 
-  deltay = abs(y - j); // pareil!!
-  radius = sqrt((deltax * deltax) + (deltay * deltay)); //pythagoras to find the radius
-  Serial.print( deltax);
-  Serial.print(" ");
-  Serial.println(deltay);
+  deltax = abs(x - i); 
+  deltay = abs(y - j); 
+  radius = sqrt((deltax * deltax) + (deltay * deltay)); 
   Serial.print(" Rad = : ");
   Serial.println(radius);
   float tangent_slope = atan(y / x);
@@ -417,26 +415,28 @@ void arcmove_CLW(float x, float y, float i, float j)
   Serial.print("Angle: ");
   Serial.println(included_angle);
 
-  if (included_angle>=3.14){  //had to put >= because == wouldn't work
-    Serial.println("angle =3.14");
-  for (float inc = 0; inc < included_angle; inc += RESOLUTION) {
-    xpos = -(radius * sin(inc));
-    ypos = j-(radius * cos(inc)); // radius-radius*cos(inc)
-   /* Serial.print(xpos+xprevious);
-    Serial.write(9);  
-    Serial.println(ypos+yprevious);*/
-    linemove(xpos+xprevious,ypos+yprevious, init_speed); // use initial speed
-  }   
+  if (included_angle>=3.14){  // If we are doing an arc from -pi/2 to pi/2, I had to put >= because == wouldn't work
+    for (float inc = 0; inc < included_angle; inc += RESOLUTION) {    // The condition remains the same
+      xpos = -(radius * sin(inc));  // X should increase in the negatives to go clockwise so I simply added a '-' to "mirror" the counterclockwise movement
+      ypos = radius-(radius * cos(inc)); // Remains the same as with CCLW movement
+      // Like with CCLW I printed the values here to see if it was working or not
+     /* Serial.print(xpos+xprevious);
+      Serial.write(9);  
+      Serial.println(ypos+yprevious);*/
+      // Like with CCLW I had troubles using linemove as the last steps were not the correct ones
+      linemove(xpos,ypos, init_speed); 
+    }   
   }
   else {
-        Serial.println("angle !=3.14");
-  for (float inc = 0; inc > included_angle; inc -= RESOLUTION) {
-    xpos = radius * sin(inc);
-    ypos = j-(radius * cos(inc)); // radius-radius*cos(inc)
-    /*Serial.print(xpos+xprevious);
-    Serial.write(9);  
-    Serial.println(ypos+yprevious);*/
-    linemove(xpos+xprevious,ypos+yprevious, init_speed); // use initial speed
-  }  
+    for (float inc = 0; inc > included_angle; inc -= RESOLUTION) {  // If we are doing an angle between -pi/2 and 0, this one I didn't use in my G-code but still implemented it
+      // To go to the opposite way of CCLW I could not only use a negative X I had to transform the for loop so that the iterations in X would go in the negatives (with sin) 
+      // but will remain the same in the positives with Y (as it is a cos)
+      xpos = radius * sin(inc); 
+      ypos = radius-(radius * cos(inc)); 
+      /*Serial.print(xpos+xprevious);
+      Serial.write(9);  
+      Serial.println(ypos+yprevious);*/
+      linemove(xpos,ypos, init_speed); // use initial speed
+    }  
   }
 }
