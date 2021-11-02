@@ -19,9 +19,9 @@ MOVE DEPENDS ON THE PREVIOUS POSITION
 G00 X10.0 Y0.0 S50 #          // Increase the speed of the rapid move
 G01 X30.0 Y0.0 F100 #         
 G03 X10.0 Y10.0 I0.0 J10.0 #  // First arc counterclokwise
-G01 X0.0 Y34.0.0 F100 #
-G03 X-6.0 Y6.0 I-6.0 J0.0 #   // Second arc, also counterclockwise
-G01 X-39.0 Y0.0 F100 #
+G01 X0.0 Y35.0.0 F100 #
+G03 X-5.0 Y5.0 I-6.0 J0.0 #   // Second arc, also counterclockwise
+G01 X-40.0 Y0.0 F100 #
 G01 X-5.0 Y-5.0 F100 #
 G01 X0.0 Y-35.0 F100 #
 G01 X10.0 Y-10.0 F100 #
