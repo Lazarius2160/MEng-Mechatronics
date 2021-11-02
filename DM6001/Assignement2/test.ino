@@ -262,8 +262,8 @@ void linemove(float x, float y, int feedRate)
   
   // For the feedrate we know that feedrate is in mm/min and speed in rpm, 100steps = 1mm and 200 steps = 1 revolution, hence 1rpm=200steps/min so:
   // -> a feedrate of 50mm/min=5000steps/min=25*200steps/min=25rpm
-  X_Axis.setSpeed(feedrate/2);
-  Y_Axis.setSpeed(feedrate/2);
+  X_Axis.setSpeed(feedRate/2);
+  Y_Axis.setSpeed(feedRate/2);
   
   if (xsteps==0 && ysteps != 0){
     while (ycount!=ysteps){
