@@ -259,7 +259,12 @@ void linemove(float x, float y, int feedRate)
   int xsteps = x* 100;
   int ysteps = y* 100;
   int xcount=0, ycount=0;
-
+  
+  // For the feedrate we know that feedrate is in mm/min and speed in rpm, 100steps = 1mm and 200 steps = 1 revolution, hence 1rpm=200steps/min so:
+  // -> a feedrate of 50mm/min=5000steps/min=25*200steps/min=25rpm
+  X_Axis.setSpeed(feedrate/2);
+  Y_Axis.setSpeed(feedrate/2);
+  
   if (xsteps==0 && ysteps != 0){
     while (ycount!=ysteps){
       if (ysteps>=0){
@@ -338,6 +343,9 @@ void linemove(float x, float y, int feedRate)
   //Set the new actual position 
   xprevious+=xcount;
   yprevious+=ycount;
+  // Set speed to initial value 
+  X_Axis.setSpeed(init_speed);
+  Y_Axis.setSpeed(init_speed);
 }
 
 void arcmove_CCLW(float x, float y, float i, float j)
