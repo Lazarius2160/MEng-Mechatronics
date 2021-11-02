@@ -4,12 +4,16 @@
 // Assignement 2
 //------------------------------------------------------------------------------------
 
+/* I used TinkerCAD simulator as I had problem with Arduino simulator, the only changes are that one must make '/n'
+ *  to send the value. And that is was difficult to copy paste the output to excel (max 150 output and it auto scrolls
+ *  down). 
+ */
 
 //--------------------MOVES---------------------------------------
 /*
 TO DO LINE BY LINE
-IF USING THE SERIAL MONITOR ON ARDUINO IDE, NEED TO DO AN ENTER AT THE END OF EACH LINE
-IF USING THE ARDUINO SIMULATOR, PUT AN '#' AT THE END OF EVERY LINE AND UNCOMMENT CASE '#' LINE 101
+IF USING THE SERIAL MONITOR ON ARDUINO IDE, NEED TO DO AN ENTER AT THE END OF EACH LINE AND NO '#'
+IF USING THE ARDUINO SIMULATOR, PUT AN '#' AT THE END OF EVERY LINE AND USE THE CASE '#' LINE 101
 MOVE DEPENDS ON THE PREVIOUS POSITION
 
 G00 X10.0 Y0.0 S50 #          // Increase the speed of the rapid move
@@ -52,12 +56,12 @@ float ival, jval; // Position of arc centres
 
 //--------------------CREATION OF STEPPERS------------------------
 Stepper X_Axis(stepsPerRevolution, 2, 3, 5, 6); // Create an instance of Stepper for axis X, connected to pin 2,3,5 and 6 to the Arduino
-Stepper Y_Axis(stepsPerRevolution, 7, 8, 9, 10); // Create an instance of Stepper for axis Y
+Stepper Y_Axis(stepsPerRevolution, 7, 8, 9, 10); // Create an instance of Stepper for axis Y, connected to pin 7,8,9 and 10 to the Arduino
 
 //--------------------SETUP---------------------------------------
 void setup() {
-  Serial.begin(9600);
-  X_Axis.setSpeed(init_speed);
+  Serial.begin(9600);   // Launch the dialogue between arduino and the laptop (through the Serial Monitor)
+  X_Axis.setSpeed(init_speed);    // Set initial speed of the stepper
   Y_Axis.setSpeed(init_speed);
   Serial.println("Enter G-code coordinates: "); // Tell user to input values from keyboard, don't forget to do it line by line 
 }
@@ -67,10 +71,11 @@ void loop() {
   if (Serial.available()) {  // Wait for something to be typed
     // Beware! Always write in float format (10.0 instead of 10) as we use parsefloat and that putting an 'int' may cause trouble
     char ch = Serial.read();  // Read the input character
-    
+
+    // Depending on the character inputed, the program will behave differently
     switch (ch) {
 
-      case'G': movemode = Serial.parseInt(); // After the G and before the next not int character, store the number found and use it for the chosemode function
+      case'G': movemode = Serial.parseInt(); // After the G and before the next "not int" character, store the number found and use it for the chosemode function
         Serial.print("Move mode:");
         Serial.println(movemode);
         break;
@@ -109,9 +114,9 @@ void loop() {
       case 'j': jval    = Serial.parseFloat();  // If it is X then expect a float to follow
         break; // Values are stored
 
-      case  '#':    // If use '#' in arduino IDE does each movement twice
-      case '\n':   // Return key has been hit. 
-        chosemode(movemode);    // Select the move to do depending on the G input
+      case  '#':    // Comment if using Arduino IDE otherwise it does each movement twice
+      case '\n':   // Return key has been hit
+        chosemode(movemode);    // Select the move to do depending on the G number inputed
         break;
 
       default:
@@ -126,6 +131,10 @@ void loop() {
 
 //--------------------DIFFERENT WAYS OF MOVING - functions-------------------
 void chosemode (int mode){
+   /* Choose the move mode depending on the Gxx input.
+    I created a function outside the loop because my Arduino simulator did not wanted to 
+    enter in rapidmove/linemove/etc if it was in the case '/n' of the switch. But doing so is 
+    not mandatory one could simply copy paste the content of the function and remplace "chosemode(movemode)" with that.*/
    if (mode == RAPID) {
     rapidmove(xpos, ypos, speed);
    }
@@ -142,27 +151,27 @@ void chosemode (int mode){
 
 void rapidmove(float x, float y, int maxSpeed)
 {
-  int xsteps = x* 100;
-  int ysteps = y* 100;
-  int xcount=0, ycount=0;
+  int xsteps = x* 100;    // To do 1mm we need 100 steps so we have to multiply by 100 (as a revolution is 2mm and we choose stepPerRevolution to be 200)
+  int ysteps = y* 100;    // the number of iteration our while loop will do
+  int xcount=0, ycount=0;   // Increase or decrease until it is equal to xsteps and/or ysteps
   
   // Set speed to value given
   X_Axis.setSpeed(maxSpeed);
   Y_Axis.setSpeed(maxSpeed);
 
   // 3 cases to work on : horizontal, vertical and diagonal
-  if (xsteps==0 && ysteps != 0){    // Horizontal movement with X0.0
+  if (xsteps==0 && ysteps != 0){    // Vertical movement with X0.0, only Y will move
     while (ycount!=ysteps){         // We increase/decrease ycount until it is equal to ysteps, then y destination is reached
-      if (ysteps>=0){               // If Y increases so Yx.x > 0
-        if (ycount < ysteps){       // '<' so that is doesn't do an overstep
-          Y_Axis.step(1);           // Y stepper increases by one
-          ycount++;
+      if (ysteps>=0){               // If Ysteps>=0 so Ycount has to increases
+        if (ycount < ysteps){       // Until the number of step (counted by ycount) is not reached, '<' so that is doesn't do an overstep
+          Y_Axis.step(1);           // Y stepper increases by one step
+          ycount++;                 // Ycount increases and the while loop continues until ycount=ystep so the Y position is reached
         }
       }
-        else{                       // If Y decreases so Yx.x < 0
+        else{                       // If Ysteps<=0 so Ycount has to decrease 
           if (ycount > ysteps){     // '>' so that is doesn't do an overstep
-            Y_Axis.step(-1);        // Y stepper decreases by one
-            ycount--; 
+            Y_Axis.step(-1);        // Y stepper decreases by one step
+            ycount--;               // Ycount decreases and the while loop continues until ycount=ystep so the Y position is reached
           }
         }
     // Just for testing purpose, these steps are not supposed to be used in the drawing as we are in rapid mode and not line mode
@@ -172,7 +181,7 @@ void rapidmove(float x, float y, int maxSpeed)
     }
   } 
       
-  if (ysteps==0 & xsteps != 0){     // Vertical movement with Y0.0 
+  if (ysteps==0 & xsteps != 0){     // Vertical movement with Y0.0, only X will move
       while (xcount!=xsteps){       // Same methodology as before
         if (xsteps>=0){            
           if (xcount < xsteps){
@@ -195,7 +204,7 @@ void rapidmove(float x, float y, int maxSpeed)
   }
 
   if (xsteps !=0 && ysteps!=0){   // Diagonal movement 
-  while (xcount != xsteps || ycount != ysteps)  // Needs to reach X AND Y given positions
+  while (xcount != xsteps || ycount != ysteps)  // Needs to reach X AND Y given positions, so continue until the 2 conditions are false
   {
     if (xsteps>=0){   // We increase/decrease xcount until it is equal to xsteps, then x destination is reached
       if (xcount < xsteps){
@@ -232,9 +241,11 @@ void rapidmove(float x, float y, int maxSpeed)
   X_Axis.setSpeed(init_speed);
   Y_Axis.setSpeed(init_speed);
 
-  //Set the new actual position 
+  // Set the new actual position as our displacement depends on the previous movement (so when the movement is finished the last know position becomes
+  // the new actual position and the next movement will be based on that
   xprevious+=xcount;
   yprevious+=ycount;
+  // This print allowed me to know if the rapidmove went to the good position as rapidmove is not printing each position the stepper makes
   Serial.print("Actual position : X = ");
   Serial.print(xprevious);
   Serial.print("; Y = ");
@@ -243,7 +254,8 @@ void rapidmove(float x, float y, int maxSpeed)
 
 void linemove(float x, float y, int feedRate)
 {
-  // ADD FEEDRATE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  // The reasoning is exactly the same except that here we have to print the step we are in to mimic the pen "drawing" whereas with 
+  // rapid move the pen does not draw it just changes position
   int xsteps = x* 100;
   int ysteps = y* 100;
   int xcount=0, ycount=0;
@@ -262,6 +274,8 @@ void linemove(float x, float y, int feedRate)
             ycount--; 
           }
         }
+    // Here we have to print xcount=the actual number of steps the stepper has done since the last G-code instruction and ADD
+    // the previous number of step because our movement depends on the precedent one !
     Serial.print(xcount+xprevious);
     Serial.write(9);  // ...enables us to separate xposition and ypositions using csv format with ',' character and tab as a separator
     Serial.println(ycount+yprevious);
@@ -270,7 +284,7 @@ void linemove(float x, float y, int feedRate)
       
   if (ysteps==0 & xsteps != 0){
       while (xcount!=xsteps){
-        if (xsteps>=0){   //we increase xcount until it is equal to xsteps, then x destination is reached
+        if (xsteps>=0){   
           if (xcount < xsteps){
             X_Axis.step(1);
             xcount++;
@@ -289,9 +303,9 @@ void linemove(float x, float y, int feedRate)
   }
 
   if (xsteps !=0 && ysteps!=0){
-  while (xcount != xsteps || ycount != ysteps)  // theses cases are due to incremental way of moving
+  while (xcount != xsteps || ycount != ysteps)  
   {
-    if (xsteps>=0){   //we increase xcount until it is equal to xsteps, then x destination is reached
+    if (xsteps>=0){   
       if (xcount < xsteps){
         X_Axis.step(1);
         xcount++;
@@ -328,54 +342,61 @@ void linemove(float x, float y, int feedRate)
 
 void arcmove_CCLW(float x, float y, float i, float j)
 {
-  float deltax, deltay;
-  float xpos, ypos;
+  // This movement will go to x and y position making a COUNTER clock wise move centered in (i,j)
+  // It's maximum angle is from -pi/2 to pi/2 and it can do arc from the range : [-pi/2, 0], [0, pi/2], [-pi/2, pi/2]
+  // To draw an arc we will approximate it using small rectangles so that it can be drawn using linemove function already implemented
+
+  float deltax, deltay; // This is the variation between the x (or y) position to reach and the center i (or j) of the circle, this will help us calculate the radius
+  float xpos, ypos;     // Intermediaries positions taken by x and y to be calculated using line move
   float radius;
 
-  deltax = abs(x - i); // general case if x does not corresponds to i 
-  deltay = abs(y - j); // pareil!!
-  radius = sqrt((deltax * deltax) + (deltay * deltay)); //pythagoras to find the radius
-  Serial.print( deltax);
-  Serial.print(" ");
-  Serial.println(deltay);
+  deltax = abs(x - i); 
+  deltay = abs(y - j); 
+  radius = sqrt((deltax * deltax) + (deltay * deltay)); // Pythagoras to find the radius
   Serial.print(" Rad = : ");
   Serial.println(radius);
-  float tangent_slope = atan(y / x);
-  float included_angle = tangent_slope * 2;
+  float tangent_slope = atan(y / x);         // Angle of the rectangle to make the approximation with
+  float included_angle = tangent_slope * 2;  //Angle between precedent point and the next one, in the circle
   Serial.println("Angle");
   Serial.println(included_angle);
    
-  if (included_angle<0){
+  if (included_angle<0){    // If we want an arc to be from 0 to pi/2, the included angle will be negative (as we are in counterclockwise)
     for (float inc = 0; inc < abs(included_angle); inc += RESOLUTION) { 
-    // We divide the angle we need in smaller angles to calculate small lines to create the arc (approximation), for each iteration, the angle is going to increase by RESOLUTION in degree
+    // We divide the angle we need in smaller angles to calculate small rectangles to create the arc (approximation by rectangles)
+    // For each iteration, the angle is going to increase by RESOLUTION in degree
+    // The condition is '<' so the last for iteration will not be bigger than the included angle
     ypos = radius * sin(inc); // This is the y cordinate of the line we'll have to trace
     xpos = -(radius-(radius * cos(inc))); // This is it's x coordinate
-    // This prints the positions of x and y in relative coordinates (regarding the previous position given by G-Code), this is for testing purpose and readability
-    // we then need to draw the line between the two points using linemove
+    // As you can see the y and the x have been "exchange" as when we are between -pi/2 and 0 the calculus of xpos will be the one of ypos in between 0 and pi/2 (rotation of 90 of the whole arc)
+    
+    // This prints the positions to reach for x and y in relative coordinates (regarding the previous position given by G-Code), this is for testing purpose and readability
+    // We then need to draw the line between the two points using linemove
     /*Serial.print(xpos+xprevious);   
     Serial.write(9);  
     Serial.println(ypos+yprevious);*/
-    linemove(xpos,ypos, init_speed); // We call line move to trace the line in between the x and y coordinate we found, this will trace the small lines to link each x and y
-  //!!!!!!!!!!!!!!!!!!!!!! PBM WHEN USING LINEMOVE : il s'arrete a 9951 et 5671 quand lui demande d'aller en 1,1 (mais le calcul de x et y est correct juste pas celui de linemove, peut etre du au fait qu'il skip des step donc faire +0.1?
+    linemove(xpos,ypos, init_speed); // We call line move to trace the line in between the x and y coordinate we found using the good stepper position
+    // There is no need to add here "previous positions" as it is already done in the linemove function
+    
+    // Unfortunately I encountered a problem when using line move:
+    // When using only the prints line 413, we saw that when asked to do G03 X1.0 Y1.0 I0.0 J1.0, the end position is correct as it is (1.0, 1.0) and when ploting in excel
+    // we see the arc done properly, however when using line move, the movement stops at Xcount+Xprevious= 9951 and Ycount+Yprevious= 5671, so the steps to go to 10 000 and 10 000 are not done
+    // This can be due to an iteration not done inside a for or a while. I tried to add an iteration in the for but it did oversteps, and I cannot change linemove function as it works for proper line moves.
+    // Hence I am just plotting the arcs in excel using the prints line 413 and not line move
     }
   }
   
   else { 
   for (float inc = 0; inc < included_angle; inc +=RESOLUTION) {
-    xpos = radius * sin(inc);
-    ypos = radius-(radius * cos(inc)); // radius-radius*cos(inc)
+    xpos = radius * sin(inc);   // Calculus given in the video
+    ypos = radius-(radius * cos(inc)); 
     /*Serial.print(xpos+xprevious); 
     Serial.write(9);  
     Serial.println(ypos+yprevious);*/
-    Serial.print("New iteration with: x=");
-    Serial.print(xpos);
-    Serial.print(" and y=");
-                 Serial.println(ypos);
-    linemove(xpos,ypos, init_speed); // use initial speed4
+    // Same problem regarding line move
+    linemove(xpos,ypos, init_speed); 
   }
   }
 }
-  
 
 void arcmove_CLW(float x, float y, float i, float j)
 {
