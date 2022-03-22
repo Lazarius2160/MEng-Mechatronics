@@ -2,6 +2,10 @@
 // DM6001 Seamus GORDON
 // MEng Mechatronics 2021-2022
 // Assignement 2
+
+// Brief: This code takes G-Code values as location parameters (inputs) and trace the design using coordinates. 
+// The coordinates will be put in excel and trace using a graph to show the design. 
+
 //------------------------------------------------------------------------------------
 
 /* I used TinkerCAD simulator as I had problem with Arduino simulator, the only changes are that one must make '/n'
